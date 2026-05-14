@@ -144,7 +144,7 @@ const PACKAGES = [
     border: "#e0e0e0",
     dark: false,
     popular: false,
-    features: ["Submit scam message", "Full detailed analysis report", "Scam category detection"]
+    features: ["Submit scam message", "Detailed case report", "Scam category match"]
   },
   {
     name: "Basic",
@@ -154,7 +154,7 @@ const PACKAGES = [
     border: "#90caf9",
     dark: false,
     popular: false,
-    features: ["Full AI analysis report", "Risk score assessment", "Safety action plan", "Written report"]
+    features: ["Full case review report", "Risk score assessment", "Safety action plan", "Written report"]
   },
   {
     name: "Standard",
@@ -438,7 +438,7 @@ export default function App({ onBack = () => {} }) {
         alert("Could not get payment link. Please try again.")
       }
     } catch {
-      alert("Your backend needs an /initialize-payment route before Paystack can work.")
+      alert("We could not create the payment link right now. Please try again shortly.")
     } finally {
       setLoading(false)
     }
@@ -603,7 +603,7 @@ export default function App({ onBack = () => {} }) {
                 <div className="field-label">
                   <span>Type of Scam</span>
                   {autoDetectedScamType && (
-                    <span className="detect-badge">Auto-detected: {autoDetectedScamType}</span>
+                    <span className="detect-badge">Suggested category: {autoDetectedScamType}</span>
                   )}
                 </div>
                 <select name="scamType" value={form.scamType} onChange={handleChange}>
@@ -617,7 +617,7 @@ export default function App({ onBack = () => {} }) {
 
             <label className="field-label" htmlFor="description">
               <span>Case Summary</span>
-              <span className="field-hint">Auto-detection enabled</span>
+              <span className="field-hint">Category screening enabled</span>
             </label>
             <textarea
               id="description"
@@ -716,7 +716,7 @@ export default function App({ onBack = () => {} }) {
             <div className="actions">
               <button type="button" onClick={() => setStep(2)}>Back</button>
               <button type="button" onClick={handlePay} disabled={loading} className="primary-button">
-                {loading ? "Processing..." : `Pay ${getPrice(selected?.priceUSD)} with Paystack`}
+                {loading ? "Processing..." : `Pay ${getPrice(selected?.priceUSD)} securely`}
               </button>
             </div>
           </section>
