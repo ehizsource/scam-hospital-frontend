@@ -7,7 +7,7 @@ from email.header import decode_header, make_header
 from email.message import EmailMessage
 from email.parser import BytesParser
 from email.policy import default
-from email.utils import getaddresses, make_msgid, parseaddr
+from email.utils import getaddresses, make_msgid
 
 
 WRAPPING_QUOTES = "'\"‘’“”"
@@ -17,13 +17,17 @@ def clean_setting(value):
     return value.strip().strip(WRAPPING_QUOTES)
 
 
-IMAP_HOST = clean_setting(os.getenv("AUTO_REPLY_IMAP_HOST", ""))
+def clean_password(value):
+    return clean_setting(value).replace(" ", "")
+
+
+IMAP_HOST = clean_setting(os.getenv("AUTO_REPLY_IMAP_HOST", "imap.gmail.com"))
 IMAP_PORT = int(os.getenv("AUTO_REPLY_IMAP_PORT", "993"))
-SMTP_HOST = clean_setting(os.getenv("AUTO_REPLY_SMTP_HOST", ""))
+SMTP_HOST = clean_setting(os.getenv("AUTO_REPLY_SMTP_HOST", "smtp.gmail.com"))
 SMTP_PORT = int(os.getenv("AUTO_REPLY_SMTP_PORT", "587"))
 MAILBOX = clean_setting(os.getenv("AUTO_REPLY_MAILBOX", "INBOX"))
-EMAIL_ADDRESS = clean_setting(os.getenv("AUTO_REPLY_EMAIL", ""))
-EMAIL_PASSWORD = clean_setting(os.getenv("AUTO_REPLY_PASSWORD", ""))
+EMAIL_ADDRESS = clean_setting(os.getenv("AUTO_REPLY_EMAIL", "scamehospital@gmail.com"))
+EMAIL_PASSWORD = clean_password(os.getenv("AUTO_REPLY_PASSWORD", ""))
 CHECK_INTERVAL_SECONDS = int(os.getenv("AUTO_REPLY_CHECK_INTERVAL_SECONDS", "60"))
 SUBJECT_PREFIX = os.getenv("AUTO_REPLY_SUBJECT_PREFIX", "We received your message")
 FROM_NAME = clean_setting(os.getenv("AUTO_REPLY_FROM_NAME", "ScameHospital Support"))
@@ -45,8 +49,24 @@ AUTO_SUBMITTED_HEADERS = {"auto-replied", "auto-generated"}
 def require_settings():
     global EMAIL_PASSWORD
 
+    missing = [
+        name
+        for name, value in {
+            "AUTO_REPLY_IMAP_HOST": IMAP_HOST,
+            "AUTO_REPLY_SMTP_HOST": SMTP_HOST,
+            "AUTO_REPLY_EMAIL": EMAIL_ADDRESS,
+        }.items()
+        if not value
+    ]
+
+    if missing:
+        raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
+
     if not EMAIL_PASSWORD:
-        EMAIL_PASSWORD = clean_setting(getpass("AUTO_REPLY_PASSWORD: "))
+        EMAIL_PASSWORD = clean_password(getpass("AUTO_REPLY_PASSWORD: "))
+
+    if not EMAIL_PASSWORD:
+        raise RuntimeError("AUTO_REPLY_PASSWORD is required.")
 
     try:
         EMAIL_PASSWORD.encode("ascii")
@@ -55,20 +75,6 @@ def require_settings():
             "AUTO_REPLY_PASSWORD contains a non-standard character. "
             "Type the Gmail app password manually using normal letters/numbers, without curly quotes."
         ) from exc
-
-    missing = [
-        name
-        for name, value in {
-            "AUTO_REPLY_IMAP_HOST": IMAP_HOST,
-            "AUTO_REPLY_SMTP_HOST": SMTP_HOST,
-            "AUTO_REPLY_EMAIL": EMAIL_ADDRESS,
-            "AUTO_REPLY_PASSWORD": EMAIL_PASSWORD,
-        }.items()
-        if not value
-    ]
-
-    if missing:
-        raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
 
 
 def decode_subject(raw_subject):
