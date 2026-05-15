@@ -149,12 +149,55 @@ export default function LandingPage({ onGetStarted }) {
           height: 38px;
           display: grid;
           place-items: center;
-          border-radius: 9px;
-          background: linear-gradient(135deg, var(--blue), var(--deep-blue));
-          color: #02101d;
-          font-size: 13px;
-          font-weight: 950;
-          box-shadow: 0 10px 34px rgba(0, 212, 255, 0.28);
+          border-radius: 10px;
+          background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(224, 248, 255, 0.72)),
+            linear-gradient(135deg, var(--blue), var(--deep-blue));
+          box-shadow:
+            0 10px 34px rgba(0, 212, 255, 0.28),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.42);
+        }
+
+        .landing-shield {
+          position: relative;
+          width: 24px;
+          height: 28px;
+          border-radius: 9px 9px 12px 12px;
+          background: linear-gradient(180deg, var(--deep-blue), #02101d);
+          clip-path: polygon(50% 0, 92% 15%, 84% 74%, 50% 100%, 16% 74%, 8% 15%);
+          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+        }
+
+        .landing-cross,
+        .landing-cross::after {
+          content: "";
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          border-radius: 999px;
+          background: var(--blue);
+          transform: translate(-50%, -50%);
+        }
+
+        .landing-cross {
+          width: 5px;
+          height: 15px;
+        }
+
+        .landing-cross::after {
+          width: 15px;
+          height: 5px;
+        }
+
+        .landing-signal {
+          position: absolute;
+          right: 4px;
+          top: 5px;
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #ff5f6d;
+          box-shadow: 0 0 0 4px rgba(255, 95, 109, 0.18);
         }
 
         .landing-brand span {
@@ -829,7 +872,12 @@ export default function LandingPage({ onGetStarted }) {
 
       <nav className={`landing-nav ${scrolled ? "scrolled" : ""}`}>
         <a className="landing-brand" href="#top" aria-label="ScameHospital home">
-          <span className="landing-mark">SH</span>
+          <span className="landing-mark" aria-hidden="true">
+            <span className="landing-shield">
+              <span className="landing-cross" />
+              <span className="landing-signal" />
+            </span>
+          </span>
           Scame<span>Hospital</span>
         </a>
         <div className="landing-links">

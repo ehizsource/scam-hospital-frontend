@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: scamehospital-api
+    env: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: http://localhost:5173
+      - key: ALLOWED_ORIGIN_REGEX
+        value: https://.*\.onrender\.com
+      - key: CLINIC_TIMEZONE
+        value: Africa/Lagos
+
+  - type: static
+    name: scamehospital-frontend
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_BACKEND_URL
+        fromService:
+          type: web
+          name: scamehospital-api
+          envVarKey: RENDER_EXTERNAL_HOSTNAME

@@ -708,7 +708,12 @@ export default function App({ onBack = () => {} }) {
     <div className={`app-shell app-step-${step}`}>
       <nav className="nav">
         <div className="brand-wrap">
-          <span className="brand-mark">SH</span>
+          <span className="brand-mark" aria-hidden="true">
+            <span className="brand-shield">
+              <span className="brand-cross" />
+              <span className="brand-signal" />
+            </span>
+          </span>
           <span className="brand">
             Scame<span>Hospital</span>
           </span>
