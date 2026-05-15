@@ -200,7 +200,13 @@ export default function LandingPage({ onGetStarted }) {
           box-shadow: 0 0 0 4px rgba(255, 95, 109, 0.18);
         }
 
-        .landing-brand span {
+        .landing-brand-name {
+          display: inline-flex;
+          align-items: baseline;
+          gap: 0;
+        }
+
+        .landing-brand-name span {
           color: var(--blue);
         }
 
@@ -878,7 +884,7 @@ export default function LandingPage({ onGetStarted }) {
               <span className="landing-signal" />
             </span>
           </span>
-          Scame<span>Hospital</span>
+          <span className="landing-brand-name">Scame<span>Hospital</span></span>
         </a>
         <div className="landing-links">
           <a href="#types">Services</a>
