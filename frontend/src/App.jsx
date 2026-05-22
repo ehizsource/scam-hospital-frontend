@@ -415,6 +415,7 @@ export default function App({ onBack = () => {} }) {
   const [paymentPending, setPaymentPending] = useState(false)
   const [paymentReference, setPaymentReference] = useState("")
   const [autoDetectedScamType, setAutoDetectedScamType] = useState("")
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const [bookedSlots, setBookedSlots] = useState(() =>
     mergeBookedSlots(INITIAL_BOOKED_SLOTS, getStoredBookedSlots())
   )
@@ -578,7 +579,10 @@ export default function App({ onBack = () => {} }) {
           key={dateStr}
           className={`calendar-day ${isSelected ? "selected" : ""} ${fullyBooked ? "booked" : ""}`}
           disabled={isDisabled}
-          onClick={() => setForm((prev) => ({ ...prev, date: dateStr, time: "" }))}
+          onClick={() => {
+            setForm((prev) => ({ ...prev, date: dateStr, time: "" }))
+            setIsCalendarOpen(false)
+          }}
           title={fullyBooked ? "Fully booked" : isPast ? "Past date" : ""}
         >
           {day}
@@ -908,7 +912,27 @@ export default function App({ onBack = () => {} }) {
               </div>
 
               <div className="schedule-surface">
-                <div className="calendar">
+                <div className="local-time-banner">
+                  <div>
+                  <span className="local-time-kicker">Local appointment time</span>
+                    <h2>Choose date and time</h2>
+                  </div>
+                  <p>
+                    {form.country
+                      ? `Your preferred timezone is picked from ${form.country}. Booked times are blocked so appointments do not overlap.`
+                      : "Choose your country first so the appointment times match your location."}
+                  </p>
+                  <button
+                    type="button"
+                    className={`date-picker-toggle ${isCalendarOpen ? "active" : ""}`}
+                    onClick={() => setIsCalendarOpen((current) => !current)}
+                    aria-expanded={isCalendarOpen}
+                  >
+                    {selectedDateLabel}
+                  </button>
+                </div>
+
+                <div className={`calendar ${isCalendarOpen ? "calendar-open" : ""}`}>
                   <div className="calendar-header">
                     <button type="button" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}>Previous</button>
                     <strong>{currentMonth.toLocaleString("default", { month: "long", year: "numeric" })}</strong>
@@ -924,18 +948,6 @@ export default function App({ onBack = () => {} }) {
                 </div>
 
                 <div className={`time-slots ${form.date ? "" : "is-disabled"}`}>
-                <div className="local-time-banner">
-                  <div>
-                  <span className="local-time-kicker">Local appointment time</span>
-                    <h2>Choose date and time</h2>
-                  </div>
-                  <p>
-                    {form.country
-                      ? `Your preferred timezone is picked from ${form.country}. Booked times are blocked so appointments do not overlap.`
-                      : "Choose your country first so the appointment times match your location."}
-                  </p>
-                  <strong>{form.country ? timezoneLabel : selectedDateLabel}</strong>
-                </div>
                 <div className="button-row">
                   {TIMES.map((time) => {
                     const booked = form.date && isTimeBooked(form.date, time)

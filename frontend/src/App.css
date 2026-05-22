@@ -831,6 +831,7 @@ textarea {
 .schedule-surface .calendar {
   display: flex;
   flex-direction: column;
+  order: 1;
   flex: 0 0 auto;
   min-height: 0;
   height: clamp(248px, 35dvh, 280px);
@@ -900,6 +901,7 @@ textarea {
 }
 
 .time-slots {
+  order: 3;
   margin-top: 12px;
 }
 
@@ -916,6 +918,7 @@ textarea {
 
 .local-time-banner {
   display: grid;
+  order: 2;
   grid-template-columns: minmax(160px, 0.62fr) minmax(220px, 1fr) minmax(130px, auto);
   gap: 12px;
   align-items: center;
@@ -943,7 +946,7 @@ textarea {
   line-height: 1.45;
 }
 
-.local-time-banner strong {
+.date-picker-toggle {
   justify-self: end;
   border: 1px solid rgba(37, 99, 235, 0.24);
   border-radius: 999px;
@@ -951,7 +954,14 @@ textarea {
   background: rgba(255, 255, 255, 0.72);
   color: #17211f;
   font-size: 12px;
+  font-weight: 850;
   white-space: nowrap;
+}
+
+.date-picker-toggle:hover,
+.date-picker-toggle.active {
+  border-color: rgba(37, 99, 235, 0.5);
+  background: #ffffff;
 }
 
 .time-slots button {
@@ -1712,7 +1722,7 @@ textarea {
     align-items: start;
   }
 
-  .local-time-banner strong {
+  .date-picker-toggle {
     justify-self: start;
   }
 
@@ -1812,7 +1822,16 @@ textarea {
   }
 
   .schedule-surface .calendar {
+    display: none;
+    order: 2;
+    height: auto;
     min-height: auto;
+    margin-top: 12px;
+    overflow: hidden;
+  }
+
+  .schedule-surface .calendar.calendar-open {
+    display: flex;
   }
 
   .calendar {
@@ -1893,14 +1912,19 @@ textarea {
   }
 
   .local-time-banner {
+    order: 1;
     grid-template-columns: 1fr;
     gap: 12px;
     padding: 15px;
   }
 
-  .local-time-banner strong {
+  .date-picker-toggle {
     justify-self: start;
     white-space: normal;
+  }
+
+  .time-slots {
+    order: 3;
   }
 
   .time-slots .button-row {
