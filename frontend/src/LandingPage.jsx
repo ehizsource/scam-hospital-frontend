@@ -25,6 +25,14 @@ const STEPS = [
   ["Book deeper support", "If you need more help, choose a package and speak with ScameHospital."]
 ]
 
+const FAQS = [
+  ["Is ScameHospital confidential?", "Yes. Your case details are used only to review the situation and prepare support guidance."],
+  ["Can I start without paying?", "Yes. You can begin with the free scam check before choosing any paid consultation package."],
+  ["What should I prepare before booking?", "Bring screenshots, messages, payment requests, links, usernames, emails, or anything that shows what happened."],
+  ["Do you recover lost money?", "ScameHospital helps you understand the risk, organize evidence, and decide safer next steps. Recovery is not guaranteed."],
+  ["How do appointment times work?", "Choose your country first, then pick an available date and time so the appointment matches your local timezone."]
+]
+
 const SUPPORT_EMAIL = "contact@scamehospital.com"
 
 export default function LandingPage({ onGetStarted }) {
@@ -690,6 +698,69 @@ export default function LandingPage({ onGetStarted }) {
           text-align: right;
         }
 
+        .faq-list {
+          max-width: 900px;
+          margin: 0 auto;
+          display: grid;
+          gap: 14px;
+        }
+
+        .faq-item {
+          border: 1px solid rgba(255, 255, 255, 0.09);
+          border-radius: 16px;
+          background: rgba(255, 255, 255, 0.045);
+          overflow: hidden;
+        }
+
+        .faq-item[open] {
+          border-color: rgba(0, 212, 255, 0.3);
+          background: rgba(255, 255, 255, 0.065);
+        }
+
+        .faq-item summary {
+          min-height: 64px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          padding: 18px 22px;
+          color: white;
+          cursor: pointer;
+          font-size: 16px;
+          font-weight: 850;
+          list-style: none;
+        }
+
+        .faq-item summary::-webkit-details-marker {
+          display: none;
+        }
+
+        .faq-item summary::after {
+          content: "+";
+          width: 30px;
+          height: 30px;
+          flex: 0 0 auto;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          border: 1px solid rgba(0, 212, 255, 0.28);
+          color: var(--blue);
+          font-size: 20px;
+          line-height: 1;
+        }
+
+        .faq-item[open] summary::after {
+          content: "−";
+        }
+
+        .faq-item p {
+          margin: 0;
+          padding: 0 22px 20px;
+          color: rgba(255, 255, 255, 0.58);
+          font-size: 15px;
+          line-height: 1.65;
+        }
+
         .cta-band {
           position: relative;
           z-index: 1;
@@ -841,6 +912,18 @@ export default function LandingPage({ onGetStarted }) {
           .landing-section {
             padding-block: 68px;
           }
+
+          .faq-item summary {
+            align-items: flex-start;
+            min-height: 0;
+            padding: 17px 18px;
+            font-size: 15px;
+          }
+
+          .faq-item p {
+            padding: 0 18px 18px;
+            font-size: 14px;
+          }
         }
 
         @media (max-width: 520px) {
@@ -891,6 +974,7 @@ export default function LandingPage({ onGetStarted }) {
           <a href="#types">Services</a>
           <a href="#how">How It Works</a>
           <a href="#evidence">Evidence</a>
+          <a href="#faq">FAQ</a>
           <a className="landing-outline landing-mail-link" href={`mailto:${SUPPORT_EMAIL}`}>
             Contact
           </a>
@@ -1031,6 +1115,26 @@ export default function LandingPage({ onGetStarted }) {
                   <span>{label}</span>
                   <strong>{value}</strong>
                 </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="landing-section">
+          <div className="section-inner">
+            <div className="section-center">
+              <span className="section-label">FAQ</span>
+              <h2>Questions before you start.</h2>
+              <p>
+                Quick answers about privacy, booking, and what ScameHospital can help you understand.
+              </p>
+            </div>
+            <div className="faq-list">
+              {FAQS.map(([question, answer], index) => (
+                <details className="faq-item" key={question} open={index === 0}>
+                  <summary>{question}</summary>
+                  <p>{answer}</p>
+                </details>
               ))}
             </div>
           </div>
