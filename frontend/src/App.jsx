@@ -163,7 +163,7 @@ const PACKAGES = [
     border: "#90caf9",
     dark: false,
     popular: false,
-    features: ["Detailed case report", "Risk score assessment", "Safety action plan", "Written report"]
+    features: ["Detailed case report", "Risk score assessment", "Safety action plan", "30min Google Meet session"]
   },
   {
     name: "Standard",
@@ -173,7 +173,7 @@ const PACKAGES = [
     border: "#00d4ff",
     dark: true,
     popular: true,
-    features: ["Everything in Basic", "45min Google Meet session", "Trauma informed counseling", "Emotional recovery guide"]
+    features: ["Everything in Basic", "Trauma informed counseling", "Emotional recovery guide", "45min Google Meet session"]
   },
   {
     name: "Premium",
@@ -183,28 +183,28 @@ const PACKAGES = [
     border: "#ffb74d",
     dark: false,
     popular: false,
-    features: ["Everything in Standard", "Full scam investigation", "Official proof document", "Priority 24hr support", "Follow up session"]
+    features: ["Everything in Standard", "Full scam investigation", "Official proof document", "Priority 24hr support", "60min Google Meet session"]
   }
 ]
 
 const PACKAGE_DUTIES = {
   Basic: {
     title: "Basic package duties",
-    afterPayment: "Payment confirmed. The Basic written review is now queued for delivery.",
-    timeline: "Written report prepared within 24 hours",
+    afterPayment: "Payment confirmed. The Basic review and Google Meet session are now queued.",
+    timeline: "Written report prepared within 24 hours plus a 30-minute Google Meet session",
     duties: [
       "Review the case summary and classify the scam pattern.",
       "Prepare a written risk score assessment.",
       "Send a practical safety action plan for what to stop, save, and verify.",
-      "Deliver the written report to the email used for booking."
+      "Reserve the selected 30-minute Google Meet support session."
     ]
   },
   Standard: {
     title: "Standard package duties",
     afterPayment: "Payment confirmed. Your written review and live support session are now queued.",
-    timeline: "Written report plus 45-minute session at the booked time",
+    timeline: "Written report plus 45-minute Google Meet session at the booked time",
     duties: [
-      "Complete everything included in Basic.",
+      "Complete the written review included in Basic.",
       "Reserve the selected 45-minute Google Meet support session.",
       "Prepare trauma-informed counselling guidance for the session.",
       "Send the emotional recovery guide and appointment details by email."
@@ -213,12 +213,12 @@ const PACKAGE_DUTIES = {
   Premium: {
     title: "Premium package duties",
     afterPayment: "Payment confirmed. Your priority investigation package is now queued.",
-    timeline: "Priority handling within 24 hours plus follow-up support",
+    timeline: "Priority handling within 24 hours plus a 60-minute Google Meet session",
     duties: [
       "Complete everything included in Standard.",
       "Begin the full scam investigation and evidence review.",
       "Prepare an official proof document from the submitted case details.",
-      "Provide priority 24-hour support and schedule the follow-up session."
+      "Provide priority 24-hour support and reserve the selected 60-minute Google Meet session."
     ]
   }
 }
