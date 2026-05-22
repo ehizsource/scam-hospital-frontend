@@ -25,7 +25,7 @@ allowed_origins = [
     for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
     if origin.strip()
 ]
-allowed_origin_regex = os.getenv("ALLOWED_ORIGIN_REGEX")
+allowed_origin_regex = os.getenv("ALLOWED_ORIGIN_REGEX", r"https?://(localhost|127\.0\.0\.1):\d+")
 CLINIC_TIMEZONE = os.getenv("CLINIC_TIMEZONE", "Africa/Lagos")
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
 PAYSTACK_CALLBACK_URL = os.getenv("PAYSTACK_CALLBACK_URL", "")
