@@ -204,6 +204,7 @@ export default function LandingPage({ onGetStarted }) {
           display: inline-flex;
           align-items: baseline;
           gap: 0;
+          white-space: nowrap;
         }
 
         .landing-brand-name span {
