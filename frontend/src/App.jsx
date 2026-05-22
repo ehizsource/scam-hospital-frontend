@@ -630,7 +630,8 @@ export default function App({ onBack = () => {} }) {
           time: form.time,
           local_time: selectedLocalTime,
           timezone: selectedTimeZone,
-          country: form.country
+          country: form.country,
+          description: form.description
         })
       })
 
@@ -654,7 +655,34 @@ export default function App({ onBack = () => {} }) {
   const handlePay = async () => {
     if (!selected) return
     if (isFreePackage) {
-      setFreeBookingSubmitted(true)
+      setLoading(true)
+
+      try {
+        const response = await fetch(`${BACKEND_URL}/submit-free-review`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: form.name,
+            email: form.email,
+            scam_type: form.scamType,
+            date: form.date,
+            time: form.time,
+            local_time: selectedLocalTime,
+            timezone: selectedTimeZone,
+            country: form.country,
+            description: form.description
+          })
+        })
+
+        if (!response.ok) throw new Error("Free review submission failed")
+
+        setFreeBookingSubmitted(true)
+      } catch (error) {
+        console.warn("Free review submission could not reach the backend.", error)
+        alert("We could not submit the free review yet. Please try again.")
+      } finally {
+        setLoading(false)
+      }
       return
     }
 
@@ -1209,7 +1237,9 @@ export default function App({ onBack = () => {} }) {
               <button type="button" onClick={() => setStep(2)}>Back</button>
               <button type="button" onClick={handlePay} disabled={loading || freeBookingSubmitted || paymentConfirmed} className="primary-button">
                 {isFreePackage
-                  ? freeBookingSubmitted
+                  ? loading
+                    ? "Submitting..."
+                    : freeBookingSubmitted
                     ? "Free review submitted"
                     : "Submit free review"
                   : paymentConfirmed

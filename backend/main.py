@@ -1,17 +1,20 @@
 import os
+import hmac
+import hashlib
 from datetime import datetime, timezone
 from typing import Optional
 from zoneinfo import ZoneInfo
 
+import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 try:
-    from .email_service import send_confirmation_email, send_received_email
+    from .email_service import send_confirmation_email, send_free_review_emails, send_received_email
     from .meet_service import create_meet_link
 except ImportError:
-    from email_service import send_confirmation_email, send_received_email
+    from email_service import send_confirmation_email, send_free_review_emails, send_received_email
     from meet_service import create_meet_link
 
 
@@ -24,9 +27,16 @@ allowed_origins = [
 ]
 allowed_origin_regex = os.getenv("ALLOWED_ORIGIN_REGEX")
 CLINIC_TIMEZONE = os.getenv("CLINIC_TIMEZONE", "Africa/Lagos")
+PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
+PAYSTACK_CALLBACK_URL = os.getenv("PAYSTACK_CALLBACK_URL", "")
 BOOKED_APPOINTMENTS = {
     "2026-05-10": {"9:00 AM", "2:00 PM"},
     "2026-05-12": {"11:00 AM", "3:00 PM", "5:00 PM"},
+}
+PACKAGE_DURATIONS = {
+    "Basic": 30,
+    "Standard": 45,
+    "Premium": 60,
 }
 
 app.add_middleware(
@@ -48,6 +58,19 @@ class RegistrationRequest(BaseModel):
     country: Optional[str] = None
     timezone: Optional[str] = None
     local_time: Optional[str] = None
+    description: Optional[str] = None
+
+
+class FreeReviewRequest(BaseModel):
+    name: str
+    email: str
+    scam_type: str
+    date: str
+    time: str
+    country: Optional[str] = None
+    timezone: Optional[str] = None
+    local_time: Optional[str] = None
+    description: Optional[str] = None
 
 
 @app.get("/")
@@ -150,24 +173,121 @@ def register(data: RegistrationRequest):
         )
 
     booked_for_day.add(data.time)
-    send_received_email(data.name, data.email, data.scam_type)
+    send_received_email(
+        data.name,
+        data.email,
+        data.scam_type,
+        data.package,
+        data.date,
+        format_clinic_time(data.date, data.time),
+        country=data.country,
+        client_time=data.local_time,
+        client_timezone=data.timezone,
+        description=data.description,
+    )
     return {"status": "ok"}
+
+
+@app.post("/submit-free-review")
+def submit_free_review(data: FreeReviewRequest):
+    clinic_time = format_clinic_time(data.date, data.time)
+    email_status = send_free_review_emails(
+        data.name,
+        data.email,
+        data.scam_type,
+        data.date,
+        clinic_time,
+        country=data.country,
+        client_time=data.local_time,
+        client_timezone=data.timezone,
+        description=data.description,
+    )
+
+    return {"status": "ok", **email_status}
 
 
 @app.post("/initialize-payment")
 def initialize_payment(data: dict):
     package = data.get("package", "package")
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    reference = f"SH-{package.upper()}-{timestamp}".replace(" ", "-")
+    metadata = {
+        "name": data.get("name"),
+        "email": data.get("email"),
+        "package": package,
+        "date": data.get("date"),
+        "time": data.get("time"),
+        "local_time": data.get("local_time"),
+        "timezone": data.get("timezone"),
+        "scam_type": data.get("scam_type"),
+        "description": data.get("description"),
+        "country": data.get("country"),
+    }
+
+    if PAYSTACK_SECRET_KEY:
+        try:
+            amount_cents = int(round(float(data.get("amount", 0)) * 100))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Invalid payment amount.")
+
+        if amount_cents <= 0:
+            raise HTTPException(status_code=400, detail="Payment amount must be greater than zero.")
+
+        payload = {
+            "email": data.get("email"),
+            "amount": amount_cents,
+            "reference": reference,
+            "metadata": metadata,
+        }
+        if PAYSTACK_CALLBACK_URL:
+            payload["callback_url"] = PAYSTACK_CALLBACK_URL
+        if data.get("currency"):
+            payload["currency"] = data.get("currency")
+
+        response = requests.post(
+            "https://api.paystack.co/transaction/initialize",
+            headers={
+                "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=20,
+        )
+
+        if not response.ok:
+            raise HTTPException(status_code=502, detail="Payment provider could not initialize the transaction.")
+
+        body = response.json()
+        if not body.get("status"):
+            raise HTTPException(status_code=502, detail=body.get("message", "Payment initialization failed."))
+
+        auth_url = body.get("data", {}).get("authorization_url")
+        if not auth_url:
+            raise HTTPException(status_code=502, detail="Payment provider did not return a payment link.")
+
+        return {
+            "status": "payment_ready",
+            "reference": reference,
+            "payment_url": auth_url,
+        }
 
     return {
         "status": "payment_ready",
-        "reference": f"SH-{package.upper()}-{timestamp}".replace(" ", "-"),
+        "reference": reference,
         "payment_url": "https://paystack.com/pay/test-payment-link",
     }
 
 
 @app.post("/paystack-webhook")
 async def paystack_webhook(request: Request):
+    raw_body = await request.body()
+    signature = request.headers.get("x-paystack-signature")
+
+    if PAYSTACK_SECRET_KEY and signature:
+        expected = hmac.new(PAYSTACK_SECRET_KEY.encode(), raw_body, hashlib.sha512).hexdigest()
+        if not hmac.compare_digest(expected, signature):
+            raise HTTPException(status_code=401, detail="Invalid Paystack signature.")
+
     payload = await request.json()
 
     if payload.get("event") == "charge.success":
@@ -181,7 +301,20 @@ async def paystack_webhook(request: Request):
         client_timezone = meta.get("timezone")
         clinic_time = format_clinic_time(date, time)
 
-        meet_link = create_meet_link(name, email, date, time)
+        scam_type = meta.get("scam_type")
+        country = meta.get("country")
+        description = meta.get("description")
+        duration_minutes = PACKAGE_DURATIONS.get(package, 30)
+
+        meet_link = create_meet_link(
+            name,
+            email,
+            date,
+            time,
+            package=package,
+            duration_minutes=duration_minutes,
+            description=description,
+        )
         send_confirmation_email(
             name,
             email,
@@ -191,6 +324,10 @@ async def paystack_webhook(request: Request):
             meet_link,
             client_time=client_time,
             client_timezone=client_timezone,
+            scam_type=scam_type,
+            country=country,
+            description=description,
+            duration_minutes=duration_minutes,
         )
 
     return {"status": "ok"}
