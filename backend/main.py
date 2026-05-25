@@ -6,7 +6,7 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 import requests
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -162,18 +162,8 @@ def analyze(data: dict):
     }
 
 
-@app.post("/register")
-def register(data: RegistrationRequest):
-    booked_for_day = BOOKED_APPOINTMENTS.setdefault(data.date, set())
-
-    if data.time in booked_for_day:
-        raise HTTPException(
-            status_code=409,
-            detail="This appointment time has just been booked. Please choose another time.",
-        )
-
-    booked_for_day.add(data.time)
-    admin_email_sent = send_received_email(
+def send_received_email_safely(data: RegistrationRequest):
+    send_received_email(
         data.name,
         data.email,
         data.scam_type,
@@ -185,7 +175,21 @@ def register(data: RegistrationRequest):
         client_timezone=data.timezone,
         description=data.description,
     )
-    return {"status": "ok", "admin_email_sent": admin_email_sent}
+
+
+@app.post("/register")
+def register(data: RegistrationRequest, background_tasks: BackgroundTasks):
+    booked_for_day = BOOKED_APPOINTMENTS.setdefault(data.date, set())
+
+    if data.time in booked_for_day:
+        raise HTTPException(
+            status_code=409,
+            detail="This appointment time has just been booked. Please choose another time.",
+        )
+
+    booked_for_day.add(data.time)
+    background_tasks.add_task(send_received_email_safely, data)
+    return {"status": "ok", "admin_email_queued": True}
 
 
 @app.post("/submit-free-review")
