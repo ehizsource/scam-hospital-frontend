@@ -1,5 +1,12 @@
 [phases.build]
+<<<<<<< HEAD
 cmds = ["npm install", "npm run build"]
 
 [start]
 cmd = "npx serve -s dist -l $PORT"
+=======
+cmds = ["pip install -r backend/requirements.txt"]
+
+[start]
+cmd = "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+>>>>>>> ba748a23cedc8e5e4eaa49e85f155b346643222f
