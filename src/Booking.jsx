@@ -1,5 +1,8 @@
 import { useState } from "react"
-
+ 
+const BACKEND = "https://scam-hospital-backend-production.up.railway.app"
+const FLW_PUBLIC_KEY = "YOUR_FLUTTERWAVE_PUBLIC_KEY" // Replace with your actual key
+ 
 const COUNTRIES = [
   "Afghanistan", "Albania", "Algeria", "Argentina", "Australia", "Austria",
   "Bangladesh", "Belgium", "Brazil", "Canada", "Chile", "China", "Colombia",
@@ -14,21 +17,21 @@ const COUNTRIES = [
   "UAE", "Uganda", "Ukraine", "United Kingdom", "United States", "Venezuela",
   "Vietnam", "Zimbabwe"
 ]
-
+ 
 const SCAM_TYPES = [
   "Romance Scam", "Crypto Fraud", "Phishing", "Fake Job Offer",
   "Business Email Compromise", "Investment Scam", "Lottery Scam",
   "Impersonation Scam", "Other"
 ]
-
+ 
 const CURRENCY_RATES = {
-  USD: { symbol: "$", rate: 1, label: "US Dollar (USD)" },
-  GBP: { symbol: "£", rate: 0.79, label: "British Pound (GBP)" },
-  EUR: { symbol: "€", rate: 0.92, label: "Euro (EUR)" },
-  AUD: { symbol: "$", rate: 1.53, label: "Australian Dollar (AUD)" },
-  CAD: { symbol: "$", rate: 1.36, label: "Canadian Dollar (CAD)" }
+  USD: { symbol: "$", rate: 1, label: "US Dollar (USD)", flwCode: "USD" },
+  GBP: { symbol: "£", rate: 0.79, label: "British Pound (GBP)", flwCode: "GBP" },
+  EUR: { symbol: "€", rate: 0.92, label: "Euro (EUR)", flwCode: "EUR" },
+  AUD: { symbol: "$", rate: 1.53, label: "Australian Dollar (AUD)", flwCode: "AUD" },
+  CAD: { symbol: "$", rate: 1.36, label: "Canadian Dollar (CAD)", flwCode: "CAD" }
 }
-
+ 
 const PACKAGES = [
   {
     name: "Free", priceUSD: 0, icon: "🆓", border: "#e0e0e0",
@@ -55,17 +58,17 @@ const PACKAGES = [
     btn: "Get Premium"
   }
 ]
-
+ 
 const TIMES = [
   "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
   "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"
 ]
-
+ 
 const BOOKED_SLOTS = {
   "2026-05-10": ["9:00 AM", "2:00 PM"],
   "2026-05-12": ["11:00 AM", "3:00 PM", "5:00 PM"],
 }
-
+ 
 function detectScamType(description) {
   const text = description.toLowerCase()
   if (text.includes("love") || text.includes("relationship") || text.includes("boyfriend") || text.includes("girlfriend") || text.includes("dating") || text.includes("romance")) return "Romance Scam"
@@ -78,37 +81,48 @@ function detectScamType(description) {
   if (text.includes("police") || text.includes("government") || text.includes("irs") || text.includes("efcc") || text.includes("impersonat")) return "Impersonation Scam"
   return ""
 }
-
+ 
+// Load Flutterwave script dynamically
+function loadFlutterwaveScript() {
+  return new Promise((resolve) => {
+    if (window.FlutterwaveCheckout) return resolve()
+    const script = document.createElement("script")
+    script.src = "https://checkout.flutterwave.com/v3.js"
+    script.onload = resolve
+    document.body.appendChild(script)
+  })
+}
+ 
 // Inject global responsive styles
 const globalStyles = `
   * { box-sizing: border-box; }
   body { margin: 0; padding: 0; }
-
+ 
   .booking-grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
-
+ 
   .packages-grid {
     display: flex;
     gap: 16px;
     justify-content: center;
     flex-wrap: wrap;
   }
-
+ 
   .package-card {
     width: 200px;
     flex-shrink: 0;
   }
-
+ 
   .currency-btns {
     display: flex;
     gap: 8px;
     justify-content: center;
     flex-wrap: wrap;
   }
-
+ 
   .progress-bar {
     display: flex;
     justify-content: center;
@@ -116,152 +130,152 @@ const globalStyles = `
     align-items: center;
     flex-wrap: nowrap;
   }
-
+ 
   .progress-label {
     font-size: 14px;
     display: inline;
   }
-
+ 
   .step-connector {
     width: 50px;
     height: 2px;
     flex-shrink: 0;
   }
-
+ 
   .nav-padding {
     padding: 18px 60px;
   }
-
+ 
   .content-padding {
     padding: 45px;
   }
-
+ 
   .time-slots {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
   }
-
+ 
   .summary-row {
     flex-direction: row;
   }
-
+ 
   .summary-value {
     text-align: right;
     max-width: 300px;
   }
-
+ 
   .action-btns {
     display: flex;
     gap: 15px;
   }
-
+ 
   .calendar-day {
     width: 36px;
     height: 36px;
     font-size: 13px;
   }
-
+ 
   @media (max-width: 768px) {
     .booking-grid-2 {
       grid-template-columns: 1fr;
       gap: 16px;
     }
-
+ 
     .packages-grid {
       flex-direction: column;
       align-items: center;
       gap: 14px;
     }
-
+ 
     .package-card {
       width: 100%;
       max-width: 340px;
     }
-
+ 
     .currency-btns {
       gap: 6px;
     }
-
+ 
     .progress-bar {
       gap: 6px;
     }
-
+ 
     .progress-label {
       display: none;
     }
-
+ 
     .step-connector {
       width: 20px;
     }
-
+ 
     .nav-padding {
       padding: 14px 16px;
     }
-
+ 
     .content-padding {
       padding: 20px 16px;
     }
-
+ 
     .time-slots {
       gap: 8px;
     }
-
+ 
     .summary-row {
       flex-direction: column;
       gap: 2px;
     }
-
+ 
     .summary-value {
       text-align: left;
       max-width: 100%;
     }
-
+ 
     .action-btns {
       flex-direction: column;
       gap: 10px;
     }
-
+ 
     .calendar-day {
       width: 30px;
       height: 30px;
       font-size: 11px;
     }
-
+ 
     .cal-header-btn {
       padding: 4px 8px !important;
       font-size: 14px !important;
     }
-
+ 
     .cal-month-label {
       font-size: 14px !important;
     }
-
+ 
     .cal-grid {
       gap: 2px !important;
     }
-
+ 
     .booking-main {
       padding: 0 12px;
       margin: 20px auto;
     }
-
+ 
     .step3-summary {
       padding: 16px !important;
     }
-
+ 
     .what-happens {
       padding: 14px 16px !important;
     }
   }
-
+ 
   @media (max-width: 400px) {
     .progress-label { display: none; }
     .nav-brand-text { font-size: 18px !important; }
     .step-number { width: 32px !important; height: 32px !important; font-size: 12px !important; }
   }
 `
-
+ 
 export default function App({ onBack = () => {} }) {
   const [step, setStep] = useState(1)
   const [selected, setSelected] = useState(null)
@@ -270,21 +284,26 @@ export default function App({ onBack = () => {} }) {
   const [countrySearch, setCountrySearch] = useState("")
   const [showCountryList, setShowCountryList] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     name: "", email: "", country: "", date: "", time: "",
     scamType: "", description: ""
   })
-
+ 
   const filteredCountries = COUNTRIES.filter(c =>
     c.toLowerCase().includes(countrySearch.toLowerCase())
   )
-
+ 
   const getPrice = (priceUSD) => {
     const curr = CURRENCY_RATES[currency]
     const converted = (priceUSD * curr.rate).toFixed(2)
     return curr.symbol + converted
   }
-
+ 
+  const getAmount = (priceUSD) => {
+    return parseFloat((priceUSD * CURRENCY_RATES[currency].rate).toFixed(2))
+  }
+ 
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm(prev => {
@@ -296,17 +315,135 @@ export default function App({ onBack = () => {} }) {
       return updated
     })
   }
-
+ 
   const isTimeBooked = (date, time) => BOOKED_SLOTS[date] && BOOKED_SLOTS[date].includes(time)
-
+ 
   const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
   const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay()
   const formatDate = (year, month, day) =>
     year + "-" + String(month + 1).padStart(2, "0") + "-" + String(day).padStart(2, "0")
-
+ 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-
+ 
+  // ✅ FIX 1: Call /register then go to step 3
+  const handleProceedToPayment = async () => {
+    if (!form.name || !form.email || !form.country || !form.date || !form.time || !form.scamType || !form.description) {
+      alert("Please fill in all fields and select a date and time.")
+      return
+    }
+    setLoading(true)
+    try {
+      await fetch(`${BACKEND}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          scam_type: form.scamType,
+          package: selected.name,
+          date: form.date,
+          time: form.time
+        })
+      })
+    } catch (err) {
+      console.error("Register error:", err)
+    }
+    setLoading(false)
+    setStep(3)
+  }
+ 
+  // ✅ FIX 2: Free package — skip payment, just go to confirmation
+  const handleFreeSubmit = async () => {
+    setLoading(true)
+    try {
+      await fetch(`${BACKEND}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          scam_type: form.scamType,
+          package: selected.name,
+          date: form.date,
+          time: form.time
+        })
+      })
+      alert("✅ Your free submission has been received! Check your email for confirmation.")
+    } catch (err) {
+      console.error("Free submit error:", err)
+      alert("Something went wrong. Please try again.")
+    }
+    setLoading(false)
+  }
+ 
+  // ✅ FIX 3: Flutterwave payment
+  const handleFlutterwavePayment = async () => {
+    setLoading(true)
+    await loadFlutterwaveScript()
+    setLoading(false)
+ 
+    window.FlutterwaveCheckout({
+      public_key: FLW_PUBLIC_KEY,
+      tx_ref: "SH-" + Date.now(),
+      amount: getAmount(selected.priceUSD),
+      currency: CURRENCY_RATES[currency].flwCode,
+      payment_options: "card,banktransfer,ussd",
+      customer: {
+        email: form.email,
+        name: form.name,
+      },
+      meta: {
+        name: form.name,
+        email: form.email,
+        scam_type: form.scamType,
+        package: selected.name,
+        date: form.date,
+        time: form.time
+      },
+      customizations: {
+        title: "ScameHospital",
+        description: `${selected.name} Package — ${form.scamType}`,
+        logo: "https://scamehospital.netlify.app/favicon.ico"
+      },
+      callback: async (response) => {
+        if (response.status === "successful") {
+          // Notify backend to send confirmation emails
+          try {
+            await fetch(`${BACKEND}/flutterwave-webhook`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                event: "charge.success",
+                data: {
+                  tx_ref: response.tx_ref,
+                  flw_ref: response.flw_ref,
+                  status: response.status,
+                  metadata: {
+                    name: form.name,
+                    email: form.email,
+                    scam_type: form.scamType,
+                    package: selected.name,
+                    date: form.date,
+                    time: form.time
+                  }
+                }
+              })
+            })
+          } catch (err) {
+            console.error("Webhook notify error:", err)
+          }
+          alert("✅ Payment successful! Check your email for your booking confirmation and Google Meet link.")
+        } else {
+          alert("❌ Payment was not completed. Please try again.")
+        }
+      },
+      onclose: () => {
+        console.log("Payment modal closed")
+      }
+    })
+  }
+ 
   const inputStyle = {
     width: "100%",
     padding: "13px 15px",
@@ -318,18 +455,18 @@ export default function App({ onBack = () => {} }) {
     outline: "none",
     fontFamily: "Segoe UI, Arial, sans-serif"
   }
-
+ 
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(currentMonth)
     const firstDay = getFirstDayOfMonth(currentMonth)
     const year = currentMonth.getFullYear()
     const month = currentMonth.getMonth()
     const days = []
-
+ 
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={"empty" + i} />)
     }
-
+ 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = formatDate(year, month, day)
       const dateObj = new Date(year, month, day)
@@ -337,7 +474,7 @@ export default function App({ onBack = () => {} }) {
       const isSelected = form.date === dateStr
       const isFullyBooked = BOOKED_SLOTS[dateStr] && BOOKED_SLOTS[dateStr].length >= TIMES.length
       const isDisabled = isPast || isFullyBooked
-
+ 
       days.push(
         <div
           key={day}
@@ -369,11 +506,11 @@ export default function App({ onBack = () => {} }) {
     }
     return days
   }
-
+ 
   return (
     <div style={{ fontFamily: "Segoe UI, Arial, sans-serif", backgroundColor: "#f0f4f8", minHeight: "100vh" }}>
       <style>{globalStyles}</style>
-
+ 
       {/* NAVBAR */}
       <nav className="nav-padding" style={{
         background: "rgba(10, 22, 40, 0.97)",
@@ -403,7 +540,7 @@ export default function App({ onBack = () => {} }) {
           ← Back
         </button>
       </nav>
-
+ 
       {/* PROGRESS BAR */}
       <div style={{ backgroundColor: "white", padding: "18px 16px", boxShadow: "0 2px 15px rgba(0,0,0,0.06)" }}>
         <div className="progress-bar">
@@ -438,9 +575,9 @@ export default function App({ onBack = () => {} }) {
           ))}
         </div>
       </div>
-
+ 
       <div className="booking-main" style={{ maxWidth: "950px", margin: "30px auto", padding: "0 16px" }}>
-
+ 
         {/* STEP 1 — CHOOSE PACKAGE */}
         {step === 1 && (
           <div>
@@ -469,7 +606,7 @@ export default function App({ onBack = () => {} }) {
                 All prices are equivalent to the standard USD rate
               </p>
             </div>
-
+ 
             <div style={{ textAlign: "center", marginBottom: "28px" }}>
               <h2 style={{ fontSize: "26px", fontWeight: "800", color: "#0a1628", marginBottom: "8px" }}>
                 Choose Your Package
@@ -478,7 +615,7 @@ export default function App({ onBack = () => {} }) {
                 All prices include VAT. Payment required to confirm booking.
               </p>
             </div>
-
+ 
             <div className="packages-grid">
               {PACKAGES.map((pkg, i) => (
                 <div
@@ -539,7 +676,7 @@ export default function App({ onBack = () => {} }) {
                 </div>
               ))}
             </div>
-
+ 
             <div style={{ textAlign: "center", marginTop: "32px", paddingBottom: "20px" }}>
               <button
                 onClick={() => selected && setStep(2)}
@@ -559,7 +696,7 @@ export default function App({ onBack = () => {} }) {
             </div>
           </div>
         )}
-
+ 
         {/* STEP 2 — YOUR DETAILS */}
         {step === 2 && (
           <div className="content-padding" style={{
@@ -579,7 +716,7 @@ export default function App({ onBack = () => {} }) {
                 {selected?.icon} {selected?.name} — {getPrice(selected?.priceUSD)} (VAT included)
               </div>
             </div>
-
+ 
             <div className="booking-grid-2">
               <div>
                 <label style={{ fontWeight: "600", fontSize: "13px", color: "#444" }}>Full Name *</label>
@@ -647,7 +784,7 @@ export default function App({ onBack = () => {} }) {
                 </select>
               </div>
             </div>
-
+ 
             <div style={{ marginTop: "20px" }}>
               <label style={{ fontWeight: "600", fontSize: "13px", color: "#444" }}>
                 Brief Description *
@@ -661,7 +798,7 @@ export default function App({ onBack = () => {} }) {
                 rows={4} style={{ ...inputStyle, resize: "vertical" }}
               />
             </div>
-
+ 
             {/* CALENDAR */}
             <div style={{ marginTop: "25px" }}>
               <label style={{ fontWeight: "600", fontSize: "13px", color: "#444", display: "block", marginBottom: "12px" }}>
@@ -681,17 +818,17 @@ export default function App({ onBack = () => {} }) {
                     style={{ background: "none", border: "1px solid #ddd", borderRadius: "8px", padding: "6px 12px", cursor: "pointer", fontSize: "16px", color: "#666" }}
                   >→</button>
                 </div>
-
+ 
                 <div className="cal-grid" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px", marginBottom: "10px" }}>
                   {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(day => (
                     <div key={day} style={{ textAlign: "center", fontSize: "11px", fontWeight: "600", color: "#aaa" }}>{day}</div>
                   ))}
                 </div>
-
+ 
                 <div className="cal-grid" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px", justifyItems: "center" }}>
                   {renderCalendar()}
                 </div>
-
+ 
                 <div style={{ display: "flex", gap: "12px", marginTop: "14px", fontSize: "11px", color: "#888", flexWrap: "wrap" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                     <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "linear-gradient(135deg, #00d4ff, #0066cc)" }} /> Selected
@@ -705,7 +842,7 @@ export default function App({ onBack = () => {} }) {
                 </div>
               </div>
             </div>
-
+ 
             {/* TIME SLOTS */}
             {form.date && (
               <div style={{ marginTop: "20px" }}>
@@ -737,7 +874,7 @@ export default function App({ onBack = () => {} }) {
                 </div>
               </div>
             )}
-
+ 
             <div style={{
               background: "linear-gradient(135deg, #f0f9ff, #e8f4fd)",
               border: "1px solid rgba(0,212,255,0.2)", borderRadius: "12px",
@@ -745,32 +882,50 @@ export default function App({ onBack = () => {} }) {
             }}>
               🔒 Your information is 100% confidential and will never be shared with third parties.
             </div>
-
+ 
             <div className="action-btns" style={{ marginTop: "28px" }}>
               <button onClick={() => setStep(1)} style={{
                 background: "transparent", border: "2px solid #e0e0e0", color: "#666",
                 padding: "13px 28px", borderRadius: "30px", cursor: "pointer",
                 fontSize: "14px", fontWeight: "600"
               }}>Back</button>
-              <button
-                onClick={() => {
-                  if (form.name && form.email && form.country && form.date && form.time && form.scamType && form.description) {
-                    setStep(3)
-                  } else {
-                    alert("Please fill in all fields and select a date and time.")
-                  }
-                }}
-                style={{
-                  background: "linear-gradient(135deg, #00d4ff, #0066cc)",
-                  color: "white", border: "none", padding: "13px 30px", borderRadius: "30px",
-                  fontWeight: "700", cursor: "pointer", fontSize: "15px", flex: 1,
-                  boxShadow: "0 6px 20px rgba(0,212,255,0.3)", transition: "all 0.3s"
-                }}
-              >Proceed to Payment →</button>
+ 
+              {/* ✅ Free package goes directly, paid packages call /register */}
+              {selected?.name === "Free" ? (
+                <button
+                  onClick={handleFreeSubmit}
+                  disabled={loading}
+                  style={{
+                    background: "linear-gradient(135deg, #00d4ff, #0066cc)",
+                    color: "white", border: "none", padding: "13px 30px", borderRadius: "30px",
+                    fontWeight: "700", cursor: loading ? "not-allowed" : "pointer",
+                    fontSize: "15px", flex: 1,
+                    boxShadow: "0 6px 20px rgba(0,212,255,0.3)", transition: "all 0.3s",
+                    opacity: loading ? 0.7 : 1
+                  }}
+                >
+                  {loading ? "Submitting..." : "Submit Free Request →"}
+                </button>
+              ) : (
+                <button
+                  onClick={handleProceedToPayment}
+                  disabled={loading}
+                  style={{
+                    background: "linear-gradient(135deg, #00d4ff, #0066cc)",
+                    color: "white", border: "none", padding: "13px 30px", borderRadius: "30px",
+                    fontWeight: "700", cursor: loading ? "not-allowed" : "pointer",
+                    fontSize: "15px", flex: 1,
+                    boxShadow: "0 6px 20px rgba(0,212,255,0.3)", transition: "all 0.3s",
+                    opacity: loading ? 0.7 : 1
+                  }}
+                >
+                  {loading ? "Please wait..." : "Proceed to Payment →"}
+                </button>
+              )}
             </div>
           </div>
         )}
-
+ 
         {/* STEP 3 — PAYMENT */}
         {step === 3 && (
           <div className="content-padding" style={{
@@ -783,7 +938,7 @@ export default function App({ onBack = () => {} }) {
             <p style={{ color: "#888", marginBottom: "24px", fontSize: "14px" }}>
               Review your booking details before payment
             </p>
-
+ 
             <div className="step3-summary" style={{
               background: "linear-gradient(135deg, #f8fafc, #f0f4f8)", borderRadius: "15px",
               padding: "20px", marginBottom: "20px", border: "1px solid #e8eef4"
@@ -812,7 +967,7 @@ export default function App({ onBack = () => {} }) {
                 </div>
               ))}
             </div>
-
+ 
             <div className="what-happens" style={{
               background: "linear-gradient(135deg, #e8f5e9, #f1f8e9)",
               border: "1px solid rgba(56,142,60,0.2)", borderRadius: "12px",
@@ -833,33 +988,38 @@ export default function App({ onBack = () => {} }) {
                 </div>
               ))}
             </div>
-
+ 
             <div className="action-btns">
               <button onClick={() => setStep(2)} style={{
                 background: "transparent", border: "2px solid #e0e0e0", color: "#666",
                 padding: "13px 28px", borderRadius: "30px", cursor: "pointer",
                 fontSize: "14px", fontWeight: "600"
               }}>Back</button>
+ 
+              {/* ✅ Flutterwave Payment Button */}
               <button
-                onClick={() => alert("Paystack payment integration coming soon!")}
+                onClick={handleFlutterwavePayment}
+                disabled={loading}
                 style={{
-                  background: "linear-gradient(135deg, #00d4ff, #0066cc)",
+                  background: "linear-gradient(135deg, #f5a623, #e8820c)",
                   color: "white", border: "none", padding: "15px 30px", borderRadius: "30px",
-                  fontWeight: "700", cursor: "pointer", fontSize: "15px", flex: 1,
-                  boxShadow: "0 6px 20px rgba(0,212,255,0.3)", transition: "all 0.3s"
+                  fontWeight: "700", cursor: loading ? "not-allowed" : "pointer",
+                  fontSize: "15px", flex: 1,
+                  boxShadow: "0 6px 20px rgba(245,166,35,0.4)", transition: "all 0.3s",
+                  opacity: loading ? 0.7 : 1
                 }}
               >
-                Pay {getPrice(selected?.priceUSD)} with Paystack
+                {loading ? "Loading..." : `Pay ${getPrice(selected?.priceUSD)} with Flutterwave`}
               </button>
             </div>
-
+ 
             <p style={{ textAlign: "center", color: "#bbb", fontSize: "12px", marginTop: "16px" }}>
-              🔒 Secure payment powered by Paystack. Your card details are never stored.
+              🔒 Secure payment powered by Flutterwave. Your card details are never stored.
             </p>
           </div>
         )}
       </div>
-
+ 
       {/* FOOTER */}
       <div style={{
         backgroundColor: "#020810", color: "rgba(255,255,255,0.4)",
@@ -883,3 +1043,4 @@ export default function App({ onBack = () => {} }) {
     </div>
   )
 }
+ 

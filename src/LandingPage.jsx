@@ -149,15 +149,41 @@ export default function LandingPage({ onGetStarted }) {
           height: 38px;
           display: grid;
           place-items: center;
-          border-radius: 9px;
-          background: linear-gradient(135deg, var(--blue), var(--deep-blue));
-          color: #02101d;
-          font-size: 13px;
-          font-weight: 950;
-          box-shadow: 0 10px 34px rgba(0, 212, 255, 0.28);
+          border-radius: 10px;
+          background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(224, 248, 255, 0.72)),
+            linear-gradient(135deg, var(--blue), var(--deep-blue));
+          box-shadow:
+            0 10px 34px rgba(0, 212, 255, 0.28),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.42);
         }
 
-        .landing-brand span {
+        .landing-logo {
+          display: block;
+          width: 27px;
+          height: 31px;
+          filter: drop-shadow(0 3px 7px rgba(0, 0, 0, 0.2));
+          animation: logoFloat 3.4s ease-in-out infinite;
+          transform-origin: 50% 50%;
+        }
+
+        .landing-logo-scan {
+          animation: logoScan 2.4s ease-in-out infinite;
+          transform-origin: 50% 50%;
+        }
+
+        .landing-logo-dot {
+          animation: logoAlert 1.7s ease-in-out infinite;
+          transform-origin: center;
+        }
+
+        .landing-brand-name {
+          display: inline-flex;
+          align-items: baseline;
+          gap: 0;
+        }
+
+        .landing-brand-name span {
           color: var(--blue);
         }
 
@@ -721,6 +747,43 @@ export default function LandingPage({ onGetStarted }) {
           }
         }
 
+        @keyframes logoFloat {
+          0%,
+          100% {
+            transform: translateY(0) rotate(0deg);
+          }
+
+          50% {
+            transform: translateY(-2px) rotate(-2deg);
+          }
+        }
+
+        @keyframes logoScan {
+          0%,
+          100% {
+            opacity: 0.42;
+            transform: translateY(-4px);
+          }
+
+          50% {
+            opacity: 1;
+            transform: translateY(5px);
+          }
+        }
+
+        @keyframes logoAlert {
+          0%,
+          100% {
+            opacity: 0.72;
+            transform: scale(0.82);
+          }
+
+          50% {
+            opacity: 1;
+            transform: scale(1.12);
+          }
+        }
+
         @media (max-width: 980px) {
           .landing-hero,
           .evidence-layout {
@@ -829,8 +892,16 @@ export default function LandingPage({ onGetStarted }) {
 
       <nav className={`landing-nav ${scrolled ? "scrolled" : ""}`}>
         <a className="landing-brand" href="#top" aria-label="ScameHospital home">
-          <span className="landing-mark">SH</span>
-          Scame<span>Hospital</span>
+          <span className="landing-mark" aria-hidden="true">
+            <svg className="landing-logo" viewBox="0 0 48 54" role="img">
+              <path d="M24 3 42 10.5v15.2c0 11.6-7.4 20.2-18 25.3C13.4 45.9 6 37.3 6 25.7V10.5L24 3Z" fill="#06233d" />
+              <path d="M24 7.3 38 13v12.2c0 9.2-5.5 16.2-14 20.9-8.5-4.7-14-11.7-14-20.9V13l14-5.7Z" fill="#0b5fcc" />
+              <path className="landing-logo-scan" d="M14 20h20" fill="none" stroke="#9ff3ff" strokeLinecap="round" strokeWidth="3" />
+              <path d="M21 16h6v9h9v6h-9v9h-6v-9h-9v-6h9v-9Z" fill="#65e8ff" />
+              <circle className="landing-logo-dot" cx="34.5" cy="15" r="4.3" fill="#ff5f6d" />
+            </svg>
+          </span>
+          <span className="landing-brand-name">Scame<span>Hospital</span></span>
         </a>
         <div className="landing-links">
           <a href="#types">Services</a>

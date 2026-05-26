@@ -258,7 +258,7 @@ function formatSlotForCountry(date, time, timeZone) {
 }
 
 const SUPPORT_EMAIL = "contact@scamehospital.com"
-const backendEnvUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8001"
+const backendEnvUrl = "https://scamehospital-api-production-3b75.up.railway.app"
 const BACKEND_URL = /^https?:\/\//i.test(backendEnvUrl)
   ? backendEnvUrl
   : `https://${backendEnvUrl}`
@@ -613,6 +613,12 @@ export default function App({ onBack = () => {} }) {
       return
     }
 
+    if (isFreePackage) {
+      reserveSlotLocally(form.date, form.time)
+      setStep(3)
+      return
+    }
+
     try {
       const response = await fetch(`${BACKEND_URL}/register`, {
         method: "POST",
@@ -708,7 +714,12 @@ export default function App({ onBack = () => {} }) {
     <div className={`app-shell app-step-${step}`}>
       <nav className="nav">
         <div className="brand-wrap">
-          <span className="brand-mark">SH</span>
+          <span className="brand-mark" aria-hidden="true">
+            <span className="brand-shield">
+              <span className="brand-cross" />
+              <span className="brand-signal" />
+            </span>
+          </span>
           <span className="brand">
             Scame<span>Hospital</span>
           </span>
