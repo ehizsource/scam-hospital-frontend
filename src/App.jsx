@@ -229,6 +229,9 @@ const TIMES = [
   "4:00 PM", "5:00 PM"
 ]
 
+// ✅ Replace with your actual Flutterwave public key when ready
+const FLW_PUBLIC_KEY = "YOUR_FLUTTERWAVE_PUBLIC_KEY"
+
 function getDateTimeFromSlot(date, time) {
   const [, month, day] = date.split("-").map(Number)
   const year = Number(date.slice(0, 4))
@@ -268,11 +271,6 @@ function buildMailtoLink(to, subject, lines = []) {
   const params = new URLSearchParams({ subject, body })
 
   return `mailto:${to}?${params.toString()}`
-}
-
-function createLocalPaymentReference(packageName) {
-  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14)
-  return `SH-${packageName.toUpperCase()}-${stamp}`.replace(/\s+/g, "-")
 }
 
 function mergeBookedSlots(...slotGroups) {
@@ -401,6 +399,17 @@ function buildRiskAnalysis(description, scamType) {
   }
 }
 
+// ✅ Load Flutterwave script dynamically
+function loadFlutterwaveScript() {
+  return new Promise((resolve) => {
+    if (window.FlutterwaveCheckout) return resolve()
+    const script = document.createElement("script")
+    script.src = "https://checkout.flutterwave.com/v3.js"
+    script.onload = resolve
+    document.body.appendChild(script)
+  })
+}
+
 export default function App({ onBack = () => {} }) {
   const [step, setStep] = useState(1)
   const [selected, setSelected] = useState(null)
@@ -439,14 +448,11 @@ export default function App({ onBack = () => {} }) {
       .then((response) => response.ok ? response.json() : null)
       .then((serverBookedSlots) => {
         if (!isCurrent || !serverBookedSlots) return
-
         setBookedSlots((current) => mergeBookedSlots(INITIAL_BOOKED_SLOTS, current, serverBookedSlots))
       })
       .catch(() => {})
 
-    return () => {
-      isCurrent = false
-    }
+    return () => { isCurrent = false }
   }, [])
 
   const filteredCountries = COUNTRIES.filter((country) =>
@@ -465,10 +471,7 @@ export default function App({ onBack = () => {} }) {
     : ""
   const selectedDateLabel = form.date
     ? new Date(`${form.date}T00:00:00`).toLocaleDateString("en", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric"
+      weekday: "short", month: "short", day: "numeric", year: "numeric"
     })
     : "Choose a date"
   const riskAnalysis = buildRiskAnalysis(form.description, form.scamType)
@@ -589,6 +592,7 @@ export default function App({ onBack = () => {} }) {
     return days
   }
 
+  // ✅ FIX 1: /register now called for ALL packages (including Free)
   const handleProceedToPayment = async () => {
     if (!selected) {
       alert("Please select a package.")
@@ -610,12 +614,6 @@ export default function App({ onBack = () => {} }) {
 
     if (missingFields.length > 0) {
       alert(`Please complete: ${missingFields.join(", ")}.`)
-      return
-    }
-
-    if (isFreePackage) {
-      reserveSlotLocally(form.date, form.time)
-      setStep(3)
       return
     }
 
@@ -641,73 +639,90 @@ export default function App({ onBack = () => {} }) {
         setForm((prev) => ({ ...prev, time: "" }))
         return
       }
-
-      if (!response.ok) throw new Error("Registration failed")
-
-      reserveSlotLocally(form.date, form.time)
-      setStep(3)
     } catch (error) {
-      console.warn("Booking registration could not reach the backend yet.", error)
-      reserveSlotLocally(form.date, form.time)
-      setStep(3)
+      console.warn("Register call failed:", error)
     }
+
+    reserveSlotLocally(form.date, form.time)
+    setStep(3)
   }
 
+  // ✅ FIX 2: Flutterwave replaces Paystack
   const handlePay = async () => {
     if (!selected) return
+
     if (isFreePackage) {
       setFreeBookingSubmitted(true)
       return
     }
 
     setLoading(true)
-    setPaymentPending(false)
+    await loadFlutterwaveScript()
+    setLoading(false)
 
-    try {
-      const response = await fetch(`${BACKEND_URL}/initialize-payment`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: form.email,
-          amount: selected.priceUSD,
-          name: form.name,
-          package: selected.name,
-          date: form.date,
-          time: form.time,
-          local_time: selectedLocalTime,
-          timezone: selectedTimeZone,
-          scam_type: form.scamType,
-          description: form.description,
-          country: form.country,
-          currency
-        })
-      })
+    const curr = CURRENCY_RATES[currency]
+    const amount = parseFloat((selected.priceUSD * curr.rate).toFixed(2))
 
-      if (!response.ok) throw new Error("Payment initialization failed")
-
-      const data = await response.json()
-
-      if (data.reference) {
-        setPaymentReference(data.reference)
+    window.FlutterwaveCheckout({
+      public_key: FLW_PUBLIC_KEY,
+      tx_ref: "SH-" + Date.now(),
+      amount,
+      currency,
+      payment_options: "card,banktransfer,ussd",
+      customer: {
+        email: form.email,
+        name: form.name
+      },
+      meta: {
+        name: form.name,
+        email: form.email,
+        scam_type: form.scamType,
+        package: selected.name,
+        date: form.date,
+        time: form.time
+      },
+      customizations: {
+        title: "ScameHospital",
+        description: `${selected.name} Package — ${form.scamType}`,
+        logo: "https://scamehospital.netlify.app/favicon.ico"
+      },
+      callback: async (response) => {
+        if (response.status === "successful") {
+          try {
+            await fetch(`${BACKEND_URL}/flutterwave-webhook`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                event: "charge.success",
+                data: {
+                  tx_ref: response.tx_ref,
+                  flw_ref: response.flw_ref,
+                  status: response.status,
+                  metadata: {
+                    name: form.name,
+                    email: form.email,
+                    scam_type: form.scamType,
+                    package: selected.name,
+                    date: form.date,
+                    time: form.time
+                  }
+                }
+              })
+            })
+          } catch (err) {
+            console.error("Webhook notify error:", err)
+          }
+          setPaymentReference(response.tx_ref)
+          setPaymentConfirmed(true)
+          setPaymentPending(false)
+        } else {
+          alert("Payment was not completed. Please try again.")
+        }
+      },
+      onclose: () => {
+        console.log("Payment modal closed")
       }
-
-      if (data.payment_url && !data.payment_url.includes("test-payment-link")) {
-        setPaymentPending(true)
-        window.location.href = data.payment_url
-      } else if (data.payment_url || data.status === "payment_ready") {
-        setPaymentPending(true)
-        alert("Your payment link is ready. Payment is not marked as received until Paystack confirms a successful charge.")
-      } else {
-        alert("We could not create the payment link. Please try again.")
-      }
-    } catch (error) {
-      console.warn("Payment service could not be reached.", error)
-      setPaymentReference(createLocalPaymentReference(selected.name))
-      setPaymentPending(true)
-      alert("Payment could not be confirmed yet. Please try again or contact support with the reference shown.")
-    } finally {
-      setLoading(false)
-    }
+    })
   }
 
   return (
@@ -930,37 +945,37 @@ export default function App({ onBack = () => {} }) {
                 </div>
 
                 <div className={`time-slots ${form.date ? "" : "is-disabled"}`}>
-                <div className="local-time-banner">
-                  <div>
-                  <span className="local-time-kicker">Local appointment time</span>
-                    <h2>Choose date and time</h2>
+                  <div className="local-time-banner">
+                    <div>
+                      <span className="local-time-kicker">Local appointment time</span>
+                      <h2>Choose date and time</h2>
+                    </div>
+                    <p>
+                      {form.country
+                        ? `Your preferred timezone is picked from ${form.country}. Booked times are blocked so appointments do not overlap.`
+                        : "Choose your country first so the appointment times match your location."}
+                    </p>
+                    <strong>{form.country ? timezoneLabel : selectedDateLabel}</strong>
                   </div>
-                  <p>
-                    {form.country
-                      ? `Your preferred timezone is picked from ${form.country}. Booked times are blocked so appointments do not overlap.`
-                      : "Choose your country first so the appointment times match your location."}
-                  </p>
-                  <strong>{form.country ? timezoneLabel : selectedDateLabel}</strong>
-                </div>
-                <div className="button-row">
-                  {TIMES.map((time) => {
-                    const booked = form.date && isTimeBooked(form.date, time)
-                    const localTime = form.date
-                      ? formatSlotForCountry(form.date, time, selectedTimeZone)
-                      : `${time} GMT`
-                    return (
-                      <button
-                        type="button"
-                        key={time}
-                        onClick={() => !booked && setForm((prev) => ({ ...prev, time }))}
-                        disabled={!form.date || booked}
-                        className={form.time === time ? "active" : ""}
-                      >
-                        {localTime} {booked ? "Booked" : ""}
-                      </button>
-                    )
-                  })}
-                </div>
+                  <div className="button-row">
+                    {TIMES.map((time) => {
+                      const booked = form.date && isTimeBooked(form.date, time)
+                      const localTime = form.date
+                        ? formatSlotForCountry(form.date, time, selectedTimeZone)
+                        : `${time} GMT`
+                      return (
+                        <button
+                          type="button"
+                          key={time}
+                          onClick={() => !booked && setForm((prev) => ({ ...prev, time }))}
+                          disabled={!form.date || booked}
+                          className={form.time === time ? "active" : ""}
+                        >
+                          {localTime} {booked ? "Booked" : ""}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
@@ -986,9 +1001,9 @@ export default function App({ onBack = () => {} }) {
                   ? "The payment is confirmed for this package, so the service duties below are now active."
                   : paymentPending
                     ? "Your booking details are saved, but payment has not been confirmed yet. Package duties unlock only after successful payment confirmation."
-                  : isFreePackage
-                    ? "Review the free package before submitting the risk review."
-                    : "Review the appointment information and package duties before payment."}
+                    : isFreePackage
+                      ? "Review the free package before submitting the risk review."
+                      : "Review the appointment information and package duties before payment."}
               </p>
             </div>
 
@@ -1142,18 +1157,21 @@ export default function App({ onBack = () => {} }) {
 
             <div className="actions">
               <button type="button" onClick={() => setStep(2)}>Back</button>
-              <button type="button" onClick={handlePay} disabled={loading || freeBookingSubmitted || paymentConfirmed} className="primary-button">
+              <button
+                type="button"
+                onClick={handlePay}
+                disabled={loading || freeBookingSubmitted || paymentConfirmed}
+                className="primary-button"
+              >
                 {isFreePackage
                   ? freeBookingSubmitted
                     ? "Free review submitted"
                     : "Submit free review"
                   : paymentConfirmed
                     ? "Payment received, duties started"
-                  : paymentPending
-                    ? "Try payment again"
-                  : loading
-                    ? "Processing..."
-                    : `Pay ${getPrice(selected?.priceUSD)} securely`}
+                    : loading
+                      ? "Loading..."
+                      : `Pay ${getPrice(selected?.priceUSD)} with Flutterwave`}
               </button>
             </div>
           </section>
