@@ -259,7 +259,7 @@ function formatSlotForCountry(date, time, timeZone) {
 }
 
 const SUPPORT_EMAIL = "contact@scamehospital.com"
-const backendEnvUrl = "https://scamehospital-api-production-3b75.up.railway.app"
+const backendEnvUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin
 const BACKEND_URL = /^https?:\/\//i.test(backendEnvUrl)
   ? backendEnvUrl
   : `https://${backendEnvUrl}`

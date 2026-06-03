@@ -2,19 +2,28 @@ import hmac
 import json
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 from zoneinfo import ZoneInfo
 
 import requests
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from email_service import ADMIN_EMAIL, send_admin_notification, send_confirmation_email, send_received_email
-from meet_service import create_meet_link
+try:
+    from .email_service import ADMIN_EMAIL, send_admin_notification, send_confirmation_email, send_received_email
+    from .meet_service import create_meet_link
+except ImportError:
+    from email_service import ADMIN_EMAIL, send_admin_notification, send_confirmation_email, send_received_email
+    from meet_service import create_meet_link
 
 
 app = FastAPI()
+BASE_DIR = Path(__file__).resolve().parent.parent
+DIST_DIR = BASE_DIR / "dist"
 
 FLW_SECRET_KEY = os.getenv("FLW_SECRET_KEY") or os.getenv("FLWSECK_TEST") or os.getenv("FLUTTERWAVE_SECRET_KEY", "")
 FLW_WEBHOOK_HASH = os.getenv("FLW_WEBHOOK_HASH", "")
@@ -64,6 +73,9 @@ class RegistrationRequest(BaseModel):
 
 @app.get("/")
 def root():
+    index_file = DIST_DIR / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
     return {"message": "Scam Hospital API is running!"}
 
 
@@ -270,3 +282,19 @@ async def flutterwave_webhook(request: Request):
 
     print(f"Flutterwave payment confirmed for {meta['name']} <{meta['email']}> - {meta['package']}")
     return {"status": "ok", **email_status}
+
+
+if (DIST_DIR / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=DIST_DIR / "assets"), name="assets")
+
+
+@app.get("/{full_path:path}")
+def serve_frontend(full_path: str):
+    requested_file = DIST_DIR / full_path
+    index_file = DIST_DIR / "index.html"
+
+    if requested_file.is_file():
+        return FileResponse(requested_file)
+    if index_file.exists():
+        return FileResponse(index_file)
+    return {"message": "Scam Hospital API is running!"}
