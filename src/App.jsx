@@ -163,7 +163,7 @@ const PACKAGES = [
     border: "#90caf9",
     dark: false,
     popular: false,
-    features: ["Detailed case report", "Risk score assessment", "Safety action plan", "Written report"]
+    features: ["Detailed case report", "Risk score assessment", "Safety action plan", "Written report", "30min Google Meet session"]
   },
   {
     name: "Standard",
@@ -183,7 +183,7 @@ const PACKAGES = [
     border: "#ffb74d",
     dark: false,
     popular: false,
-    features: ["Everything in Standard", "Full scam investigation", "Official proof document", "Priority 24hr support", "Follow up session"]
+    features: ["Everything in Standard", "Full scam investigation", "Official proof document", "Priority 24hr support", "Follow up session", "60min Google Meet session"]
   }
 ]
 
@@ -191,12 +191,13 @@ const PACKAGE_DUTIES = {
   Basic: {
     title: "Basic package duties",
     afterPayment: "Payment confirmed. The Basic written review is now queued for delivery.",
-    timeline: "Written report prepared within 24 hours",
+    timeline: "Written report prepared within 24 hours plus 30-minute session at the booked time",
     duties: [
       "Review the case summary and classify the scam pattern.",
       "Prepare a written risk score assessment.",
       "Send a practical safety action plan for what to stop, save, and verify.",
-      "Deliver the written report to the email used for booking."
+      "Deliver the written report to the email used for booking.",
+      "Reserve the selected 30-minute Google Meet support session."
     ]
   },
   Standard: {
@@ -213,9 +214,10 @@ const PACKAGE_DUTIES = {
   Premium: {
     title: "Premium package duties",
     afterPayment: "Payment confirmed. Your priority investigation package is now queued.",
-    timeline: "Priority handling within 24 hours plus follow-up support",
+    timeline: "Priority handling within 24 hours plus 60-minute session and follow-up support",
     duties: [
       "Complete everything included in Standard.",
+      "Reserve the selected 60-minute Google Meet support session.",
       "Begin the full scam investigation and evidence review.",
       "Prepare an official proof document from the submitted case details.",
       "Provide priority 24-hour support and schedule the follow-up session."
@@ -592,7 +594,6 @@ export default function App({ onBack = () => {} }) {
     return days
   }
 
-  // ✅ FIX 1: /register now called for ALL packages (including Free)
   const handleProceedToPayment = async () => {
     if (!selected) {
       alert("Please select a package.")
@@ -647,7 +648,6 @@ export default function App({ onBack = () => {} }) {
     setStep(3)
   }
 
-  // ✅ FIX 2: Flutterwave replaces Paystack
   const handlePay = async () => {
     if (!selected) return
 
