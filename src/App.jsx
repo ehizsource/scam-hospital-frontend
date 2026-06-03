@@ -228,7 +228,7 @@ const TIMES = [
 ]
 
 // ✅ Replace with your actual Flutterwave public key when ready
-const FLW_PUBLIC_KEY = "YOUR_FLUTTERWAVE_PUBLIC_KEY"
+const FLW_PUBLIC_KEY = "FLWPUBK_TEST-d732de943c04f04fbc37d0d4d7651e79-X"
 
 function getDateTimeFromSlot(date, time) {
   const [, month, day] = date.split("-").map(Number)
