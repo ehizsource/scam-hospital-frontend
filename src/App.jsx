@@ -31,18 +31,14 @@ const SCAM_TYPES = [
 const CURRENCY_RATES = {
   USD: { symbol: "$", rate: 1, label: "US Dollar (USD)" },
   GBP: { symbol: "£", rate: 0.79, label: "British Pound (GBP)" },
-  EUR: { symbol: "€", rate: 0.92, label: "Euro (EUR)" },
-  AUD: { symbol: "$", rate: 1.53, label: "Australian Dollar (AUD)" },
-  CAD: { symbol: "$", rate: 1.36, label: "Canadian Dollar (CAD)" }
+  EUR: { symbol: "€", rate: 0.92, label: "Euro (EUR)" }
 }
 
 const DEFAULT_CURRENCY = "USD"
 
 const COUNTRY_CURRENCY = {
-  Australia: "AUD",
   Austria: "EUR",
   Belgium: "EUR",
-  Canada: "CAD",
   Croatia: "EUR",
   "Czech Republic": "EUR",
   Denmark: "EUR",
